@@ -15,8 +15,6 @@ Last thing, big thank you to Stanford for making these lectures and course mater
 
 # Tools
 
-FSDL chose to implement a Text Recognizer application for their labs.
-
 ML Stack: [PyTorch](https://pytorch.org/) and [PyTorch Lightning](https://www.pytorchlightning.ai/).
 
 Managing Experiments: [Weights & Biases](https://docs.wandb.ai/).
