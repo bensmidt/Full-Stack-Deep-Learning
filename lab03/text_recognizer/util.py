@@ -1,100 +1,75 @@
-"""Base Dataset class."""
-from typing import Any, Callable, Dict, Sequence, Tuple, Union
+"""Utility functions for text_recognizer module."""
+import base64
+import contextlib
+import hashlib
+from io import BytesIO
+import os
+from pathlib import Path
+from typing import Union
+from urllib.request import urlretrieve
 
+import numpy as np
 from PIL import Image
-import torch
+import smart_open
+from tqdm import tqdm
 
 
-SequenceOrTensor = Union[Sequence, torch.Tensor]
+def to_categorical(y, num_classes):
+    """1-hot encode a tensor."""
+    return np.eye(num_classes, dtype="uint8")[y]
 
 
-class BaseDataset(torch.utils.data.Dataset):
-    """Base Dataset class that simply processes data and targets through optional transforms.
+def read_image_pil(image_uri: Union[Path, str], grayscale=False) -> Image:
+    with smart_open.open(image_uri, "rb") as image_file:
+        return read_image_pil_file(image_file, grayscale)
 
-    Read more: https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset
 
-    Parameters
-    ----------
-    data
-        commonly these are torch tensors, numpy arrays, or PIL Images
-    targets
-        commonly these are torch tensors or numpy arrays
-    transform
-        function that takes a datum and returns the same
-    target_transform
-        function that takes a target and returns the same
-    """
+def read_image_pil_file(image_file, grayscale=False) -> Image:
+    with Image.open(image_file) as image:
+        if grayscale:
+            image = image.convert(mode="L")
+        else:
+            image = image.convert(mode=image.mode)
+        return image
 
-    def __init__(
-        self,
-        data: SequenceOrTensor,
-        targets: SequenceOrTensor,
-        transform: Callable = None,
-        target_transform: Callable = None,
-    ) -> None:
-        if len(data) != len(targets):
-            raise ValueError("Data and targets must be of equal length")
-        super().__init__()
-        self.data = data
-        self.targets = targets
-        self.transform = transform
-        self.target_transform = target_transform
 
-    def __len__(self) -> int:
-        """Return length of the dataset."""
-        return len(self.data)
+@contextlib.contextmanager
+def temporary_working_directory(working_dir: Union[str, Path]):
+    """Temporarily switches to a directory, then returns to the original directory on exit."""
+    curdir = os.getcwd()
+    os.chdir(working_dir)
+    try:
+        yield
+    finally:
+        os.chdir(curdir)
 
-    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+
+def compute_sha256(filename: Union[Path, str]):
+    """Return SHA256 checksum of a file."""
+    with open(filename, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+class TqdmUpTo(tqdm):
+    """From https://github.com/tqdm/tqdm/blob/master/examples/tqdm_wget.py"""
+
+    def update_to(self, blocks=1, bsize=1, tsize=None):
         """
-        Return a datum and its target, after processing by transforms.
-
         Parameters
         ----------
-        index
-
-        Returns
-        -------
-        (datum, target)
+        blocks: int, optional
+            Number of blocks transferred so far [default: 1].
+        bsize: int, optional
+            Size of each block (in tqdm units) [default: 1].
+        tsize: int, optional
+            Total size (in tqdm units). If [default: None] remains unchanged.
         """
-        datum, target = self.data[index], self.targets[index]
-
-        if self.transform is not None:
-            datum = self.transform(datum)
-
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-
-        return datum, target
+        if tsize is not None:
+            self.total = tsize
+        self.update(blocks * bsize - self.n)  # will also set self.n = b * bsize
 
 
-def convert_strings_to_labels(strings: Sequence[str], mapping: Dict[str, int], length: int) -> torch.Tensor:
-    """
-    Convert sequence of N strings to a (N, length) ndarray, with each string wrapped with <S> and <E> tokens,
-    and padded with the <P> token.
-    """
-    labels = torch.ones((len(strings), length), dtype=torch.long) * mapping["<P>"]
-    for i, string in enumerate(strings):
-        tokens = list(string)
-        tokens = ["<S>", *tokens, "<E>"]
-        for ii, token in enumerate(tokens):
-            labels[i, ii] = mapping[token]
-    return labels
-
-
-def split_dataset(base_dataset: BaseDataset, fraction: float, seed: int) -> Tuple[BaseDataset, BaseDataset]:
-    """
-    Split input base_dataset into 2 base datasets, the first of size fraction * size of the base_dataset and the
-    other of size (1 - fraction) * size of the base_dataset.
-    """
-    split_a_size = int(fraction * len(base_dataset))
-    split_b_size = len(base_dataset) - split_a_size
-    return torch.utils.data.random_split(  # type: ignore
-        base_dataset, [split_a_size, split_b_size], generator=torch.Generator().manual_seed(seed)
-    )
-
-
-def resize_image(image: Image.Image, scale_factor: int) -> Image.Image:
-    """Resize image by scale factor."""
-    if scale_factor == 1:
-        return image
-    return image.resize((image.width // scale_factor, image.height // scale_factor), resample=Image.BILINEAR)
+def download_url(url, filename):
+    """Download a file from url to filename, with a progress bar."""
+    with TqdmUpTo(unit="B", unit_scale=True, unit_divisor=1024, miniters=1) as t:
+        urlretrieve(url, filename, reporthook=t.update_to, data=None)  # noqa: S310
