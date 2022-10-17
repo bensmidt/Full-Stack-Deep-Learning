@@ -7,7 +7,9 @@
 1. [Meta Frameworks and Model Zoos](#meta-frameworks-and-model-zoos)
 1. [Distributed Training](#distributed-training)
 
-## Reality of ML Systems
+&nbsp;
+
+# Reality of ML Systems
 1. Collect, aggregate, process, clean, label, and version the data.
 
 1. Find the model architecture and their pre-trained weights and then write and debug the model code.
@@ -18,7 +20,9 @@
 
 1. Monitor model predictions and close the data flywheel loop. Users generate fresh data for you, which needs to be added to the training set
 
-## Software Engineering
+&nbsp;
+
+# Software Engineering
 - Programming Language: Python is the clear winner
 - Code Editor: VSCode is highly recommended
 - Notebooks: 
@@ -36,7 +40,9 @@
     - Use `pip-tools` to lock in mutually compatible versions of all requirements
     - Add `Makefile` to simply run `make` to update everything
 
-## Deep Learning Frameworks
+&nbsp;
+
+# Deep Learning Frameworks
 Why DL frameworks? Deep Learning is not much code (provided you have a matrix math library). Auto-differentiation and CUDA are a lot of work and layer types, optimizers, data interfaces, etc. complicate things.
 
 1. PyTorch (Recommended):
@@ -59,7 +65,9 @@ Why DL frameworks? Deep Learning is not much code (provided you have a matrix ma
         - data augmentation, better initialization, learning rate scheduling
     - Code style is very different from mainstream Python
 
-## Meta Frameworks and Model Zoos
+&nbsp;
+
+# Meta Frameworks and Model Zoos
 Many times you can use a pretrained model instead of from scratch
 1. ONNX
     - Open standard for saving deep learning models
@@ -72,7 +80,9 @@ Many times you can use a pretrained model instead of from scratch
 1. TIMM (CV)
     - Collection of state of the art CV models
 
-## Distributed Training
+&nbsp;
+
+# Distributed Training
 Multiple machines with multiple GPUs. There are two major storage components: data batch and model parameters
 1. Trivial Parallelism: 
     - Data batch fits on single GPU
@@ -124,10 +134,7 @@ Multiple machines with multiple GPUs. There are two major storage components: da
     You can use all of these 
     ZeRO (Fully Sharded) data paralelism works much better than it used to though so using 
 
-
-
-
-
+&nbsp;
 
 ## GPUs
 
